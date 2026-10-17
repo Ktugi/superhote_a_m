@@ -73,7 +73,7 @@ def afficher(chemin:str ,reponse:Response):
 
 
 if __name__=="__main__":
-    liste_couples=[("/reference",{}),("/reviews",{"per_page":"mouk"})]
+    liste_couples=[("/reference",{}),("/reviews",{"per_page":1})]
     t=charger_token()
     for couple in liste_couples:
         r=appeler(token=t,chemin=couple[0],params=couple[1])
