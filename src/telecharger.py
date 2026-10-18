@@ -1,27 +1,31 @@
-from check import charger_token, appeler
-import sys
 import json
+import sys
 from pathlib import Path
 
+from client import charger_token, lister_tout
 
-token=charger_token()
+DATA = Path(__file__).resolve().parent.parent / "data"
 
-liste_reservations=[]
-for i in range(1,22):
-    reponse=appeler(token,"/reservations",{"per_page":100,"page":i})
-    if reponse is None:
+
+def sauver(nom, donnees):
+    with open(DATA / nom, "w", encoding="utf-8") as f:
+        json.dump(donnees, f, indent=2, ensure_ascii=False)
+
+
+if __name__ == "__main__":
+    token = charger_token()
+
+    avis = lister_tout(token, "/reviews", "reviews")
+    if avis is None:
         sys.exit(1)
-    reservations=reponse.json().get("result").get("reservations")
-    for reservation in reservations:
-        liste_reservations.append(reservation)
+    sauver("avis.json", avis)
+    print("avis :", len(avis))
 
-
-
-fichier_json=Path(__file__).resolve().parent.parent/"data"/"reservations.json"
-with open(fichier_json,"w",encoding="utf-8")as fichier:
-    json.dump(liste_reservations,fichier,indent=2,ensure_ascii=False)
-
-
+    reservations = lister_tout(token, "/reservations", "reservations")
+    if reservations is None:
+        sys.exit(1)
+    sauver("reservations.json", reservations)
+    print("réservations :", len(reservations))
 
 
 
