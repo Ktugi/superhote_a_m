@@ -25,7 +25,7 @@ if __name__ == "__main__":
     for chemin, params in liste_couples:
         r = appeler(token=t, chemin=chemin, params=params)
         if r is None:
-            print("erreur réseau", file=sys.stderr)
+            print(f"{chemin} : aucune réponse exploitable", file=sys.stderr)
             sys.exit(1)
         if not afficher(chemin, r):
             sys.exit(1)

@@ -49,7 +49,7 @@ liste_non_trouver=[]
 for avis in liste_avis_5:
     Flag=False
     for reservation in liste_reservations:  
-        if avis.get("reservation_confirmation_code")==reservation.get("external_id"):
+        if avis.get("reservation_confirmation_code")==reservation.get("external_id") and avis.get("rental_id") == reservation.get("rental_id"):
             ids_reservation.append(reservation.get("id"))
             Flag=True
     if not Flag:
@@ -57,15 +57,9 @@ for avis in liste_avis_5:
 
 print(len(ids_reservation))
 print(len(liste_avis_5))
+print(len(liste_non_trouver))
 
-  # Verification hypothèse 52 dates avis anterieurs date reservation la + ancienne
-liste_dates=[]            
-for avis in liste_non_trouver:
-    liste_dates.append(avis.get("reviewed_at"))
+  #52 dates avis anterieurs date reservation la + ancienne : Hypothèse vérifié
 
-print(liste_dates)
-
-
-              
               
               

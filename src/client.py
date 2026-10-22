@@ -38,9 +38,10 @@ def charger_token():
 
 def _lire_retry_after(reponse):
     try:
-        return max(0,int(reponse.headers.get("Retry-After", "")))
+        valeur = int(reponse.headers.get("Retry-After", ""))
     except ValueError:
         return 5
+    return valeur if valeur >= 0 else 5
 
 
 def appeler(token, chemin, params=None):
@@ -131,3 +132,51 @@ def lister_tout(token, chemin, cle, params=None):
             return None  # jamais de liste incomplète sans le dire
         elements.extend(page[0])
     return elements
+
+     
+def envoyer_message(token, reservation_id, texte, canal="sms"):
+    """POST unique, JAMAIS réessayé.
+    Rend 'envoye', 'non_remis', 'refuse', 'non_envoye' ou 'incertain'."""
+    url = f"{BASE_URL}/reservations/{reservation_id}/messages"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+    }
+    try:
+        reponse = requests.post(url, headers=headers,
+                                json={"content": texte, "channel": canal},
+                                timeout=TIMEOUT)
+    except RequestException as e:
+        print(f"envoi réservation {reservation_id} : {type(e).__name__}, "
+              "résultat incertain", file=sys.stderr)
+        return "incertain"
+
+    try:
+        corps = reponse.json()
+    except ValueError:
+        corps = None
+    code = reponse.status_code
+
+    if code == 201:
+        result = corps.get("result") if isinstance(corps, dict) else None
+        canal_retenu = result.get("channel") if isinstance(result, dict) else None
+        if canal_retenu == canal:
+            return "envoye"
+        if canal_retenu is None:
+            print(f"envoi réservation {reservation_id} : 201 mais canal "
+                  "illisible, à vérifier dans SuperHote", file=sys.stderr)
+            return "incertain"
+        print(f"envoi réservation {reservation_id} : enregistré mais non "
+              f"remis (canal retenu : {canal_retenu})", file=sys.stderr)
+        return "non_remis"
+
+    motif = ""
+    if isinstance(corps, dict):
+        motif = str(corps.get("message", ""))[:120]
+    print(f"envoi réservation {reservation_id} : code {code} {motif}",
+          file=sys.stderr)
+    if code in (404, 422):
+        return "refuse"       # définitivement pas envoyé (ex. pas de numéro)
+    if code in (401, 403, 429):
+        return "non_envoye"   # pas envoyé, problème à régler avant de continuer
+    return "incertain"        # 5xx ou autre : on ne sait pas

@@ -8,6 +8,7 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 
 
 def sauver(nom, donnees):
+    DATA.mkdir(exist_ok=True)
     with open(DATA / nom, "w", encoding="utf-8") as f:
         json.dump(donnees, f, indent=2, ensure_ascii=False)
 
