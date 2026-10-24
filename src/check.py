@@ -20,7 +20,7 @@ def afficher(chemin: str, reponse: Response):
 
 
 if __name__ == "__main__":
-    liste_couples = [("/reference", None), ("/reviews", {"per_page": 1})]
+    liste_couples = [("/reference", None), ("/reviews", {"per_page": 1}),("/reservations",{"per_page":1})]
     t = charger_token()
     for chemin, params in liste_couples:
         r = appeler(token=t, chemin=chemin, params=params)

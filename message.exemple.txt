@@ -1,0 +1,2 @@
+Bonjour {prenom}, merci beaucoup pour votre avis et pour votre séjour !
+Au plaisir de vous accueillir à nouveau.
