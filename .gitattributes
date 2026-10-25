@@ -1,1 +1,4 @@
 * text=auto eol=lf
+src/analyser.py export-ignore
+src/telecharger.py export-ignore
+src/test_envoi.py export-ignore
