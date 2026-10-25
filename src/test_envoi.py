@@ -1,8 +1,9 @@
 import sys
 
 from client import appeler, charger_token, envoyer_message
+from envoyer import charger_message, composer
 
-MESSAGE_TEST = "Bonjour jeune shlagus, ceci est un SMS de test, merci de l'ignorer."
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -30,6 +31,9 @@ if __name__ == "__main__":
         print("Annulé.")
         sys.exit(0)
 
-    resultat = envoyer_message(token, reservation_id, MESSAGE_TEST)
+    prenom=resa.get("guest_first_name")
+    modele=charger_message()
+    texte=composer(modele,prenom)
+    resultat = envoyer_message(token, reservation_id, texte)
     print("Résultat :", resultat)
     sys.exit(0 if resultat == "envoye" else 1)

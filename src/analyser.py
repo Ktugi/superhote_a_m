@@ -60,6 +60,20 @@ print(len(liste_avis_5))
 print(len(liste_non_trouver))
 
   #52 dates avis anterieurs date reservation la + ancienne : Hypothèse vérifié
+  # rental_id de reservation est tjr egal a rental id de avis
+  
+  # test si guest name est tjr la : réponse est oui.
+cgfn=[]
+for reservation in liste_reservations:
+    prenom=reservation.get("guest_first_name")
+    if type(prenom) == str and prenom is not None and len(prenom) >= 2:
+        cgfn.append(prenom)
 
+        
+
+print("\n\n")
+print(len(liste_reservations))
+print(len(set(cgfn)))
               
-              
+text = b"abc"
+print(text.decode(encoding="utf-8"))

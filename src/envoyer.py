@@ -14,8 +14,39 @@ FENETRE_JOURS = 45   # recherche de la réservation : jours avant l'avis
 MAX_ENVOIS = 20      # garde-fou : au-delà, le script refuse d'envoyer
 
 # À adapter avec le client. {salut} devient "Bonjour Marie," ou "Bonjour,"
-MESSAGE = ("{salut} merci beaucoup pour votre avis et pour votre séjour ! "
-           "Au plaisir de vous accueillir à nouveau.")
+FICHIER_MESSAGE = FICHIER_ETAT.parent / "message.txt"
+LONGUEUR_MAX = 1000   # protection contre un fichier collé par erreur
+
+
+def charger_message():
+    """Lit data/message.txt. Rend le texte, ou None s'il est inutilisable."""
+    if not FICHIER_MESSAGE.exists():
+        print("data/message.txt est introuvable.", file=sys.stderr)
+        return None
+    try:
+        texte = FICHIER_MESSAGE.read_text(encoding="utf-8").strip()
+    except UnicodeDecodeError:
+        print("data/message.txt n'est pas en texte brut. Dans TextEdit : "
+              "Format > Convertir au format Texte.", file=sys.stderr)
+        return None
+    if texte.startswith("{\\rtf"):
+        print("data/message.txt est en texte enrichi. Dans TextEdit : "
+              "Format > Convertir au format Texte.", file=sys.stderr)
+        return None
+    if not texte:
+        print("data/message.txt est vide.", file=sys.stderr)
+        return None
+    if len(texte) > LONGUEUR_MAX:
+        print(f"data/message.txt dépasse {LONGUEUR_MAX} caractères.",
+              file=sys.stderr)
+        return None
+    return texte
+
+
+def composer(modele, prenom):
+    if prenom:
+        return modele.replace("{prenom}", prenom)
+    return modele.replace(" {prenom}", "").replace("{prenom}", "")
 
 
 # ---------- mémoire des avis traités ----------
@@ -23,8 +54,16 @@ MESSAGE = ("{salut} merci beaucoup pour votre avis et pour votre séjour ! "
 def lire_etat():
     if not FICHIER_ETAT.exists():
         return None
-    with open(FICHIER_ETAT, "r", encoding="utf-8") as f:
-        etat = json.load(f)
+    try:
+        with open(FICHIER_ETAT, "r", encoding="utf-8") as f:
+            etat = json.load(f)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        print("data/etat.json est illisible (erreur de format). Remettez la "
+              "copie etat.json.bak, ou corrigez le fichier.", file=sys.stderr)
+        sys.exit(1)
+    if not isinstance(etat, dict):
+        print("data/etat.json a un contenu inattendu.", file=sys.stderr)
+        sys.exit(1)
     etat.setdefault("traites", {})
     return etat
 
@@ -123,8 +162,13 @@ def principal(envoyer, limite):
               "peut-être parti). Vérifie dans SuperHote, puis corrige "
               "data/etat.json.", file=sys.stderr)
 
+    modele = charger_message()
+    if modele is None:
+        return 1
+
     print("MODE RÉEL" if envoyer else "MODE SIMULATION (rien n'est envoyé)")
-    print("Modèle :", MESSAGE)
+    print("Modèle :", modele)
+    print("Date de départ :", etat.get("depart"))
 
     token = charger_token()
     avis_liste = lister_tout(token, "/reviews", "reviews")
@@ -133,13 +177,12 @@ def principal(envoyer, limite):
 
     aujourdhui = datetime.now(PARIS).date()
     a_traiter = avis_a_traiter(avis_liste, etat, aujourdhui, depart)
-    if limite:
-        a_traiter = a_traiter[:limite]
-    if envoyer and len(a_traiter) > MAX_ENVOIS:
-        print(f"{len(a_traiter)} messages à envoyer, au-dessus du garde-fou "
-              f"({MAX_ENVOIS}). Vérifie la date de départ. Rien n'est envoyé.",
-              file=sys.stderr)
-        return 1
+    
+    total = len(a_traiter)
+    a_traiter = a_traiter[:limite or MAX_ENVOIS]
+    if total > len(a_traiter):
+        print(f"{total} avis éligibles : {len(a_traiter)} traités maintenant, "
+              "le reste aux prochains passages.")
 
     compteurs = {"simule": 0, "envoye": 0, "non_remis": 0, "refuse": 0,
                  "incertain": 0, "introuvable": 0}
@@ -157,12 +200,11 @@ def principal(envoyer, limite):
             continue
 
         prenom = (reservation.get("guest_first_name") or "").strip()
-        salut = f"Bonjour {prenom}," if prenom else "Bonjour,"
-        texte = MESSAGE.format(salut=salut)
+        texte = composer(modele, prenom)
 
         if not envoyer:
             print(f"[SIMULATION] avis {cle} -> réservation {reservation['id']}, "
-                  f"message de {len(texte)} caractères")
+                  f"{len(texte)} caractères : {texte}")
             compteurs["simule"] += 1
             continue
 
@@ -207,4 +249,3 @@ if __name__ == "__main__":
     if args.init:
         sys.exit(initialiser())
     sys.exit(principal(args.envoyer, args.limite))
-
