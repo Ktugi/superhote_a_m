@@ -158,9 +158,15 @@ def principal(envoyer, limite):
     douteux = [k for k, v in etat["traites"].items()
                if v.get("statut") in ("en_cours", "incertain")]
     if douteux:
-        print(f"ATTENTION : {len(douteux)} avis en statut incertain (message "
+        print(f"ATTENTION : {len(douteux)} avis en statut incertain ou en cours (message "
               "peut-être parti). Vérifie dans SuperHote, puis corrige "
               "data/etat.json.", file=sys.stderr)
+
+    a_verifier = [k for k, v in etat["traites"].items()
+                  if v.get("statut") == "non_remis"]
+    if a_verifier:
+        print(f"À VÉRIFIER : {len(a_verifier)} avis enregistrés dans SuperHote "
+              "mais SMS non remis. Voir data/etat.json.", file=sys.stderr)    
 
     modele = charger_message()
     if modele is None:
@@ -223,13 +229,15 @@ def principal(envoyer, limite):
         if resultat == "non_envoye":
             del etat["traites"][cle]       # pas parti : on pourra réessayer
             ecrire_etat(etat)
+            print(f"avis {cle} : non_envoye, arrêt du passage "
+                  "(token, permission ou quota à vérifier)",file=sys.stderr)
             code_sortie = 1
             break
         etat["traites"][cle]["statut"] = resultat
         ecrire_etat(etat)
         compteurs[resultat] += 1
         print(f"avis {cle} : {resultat}")
-        if resultat == "incertain":
+        if resultat in ("incertain", "non_remis"):
             code_sortie = 1
 
     detail = " | ".join(f"{k} : {v}" for k, v in compteurs.items() if v)

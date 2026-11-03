@@ -3,7 +3,7 @@ import sys
 from client import appeler, charger_token, envoyer_message
 from envoyer import charger_message, composer
 
-
+#NECESSITE LA CREATION FICTIVE D'UNE RESERVATION TEST SUR SUPERHOTE 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
